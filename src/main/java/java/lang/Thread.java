@@ -8,7 +8,10 @@ import def.js.JSON;
 
 import java.util.function.Function;
 
-import static def.dom.Globals.*;
+import static def.dom.Globals.document;
+import static def.dom.Globals.performance;
+import static def.dom.Globals.window;
+import static def.dom.Globals.self;
 import static def.js.Globals.undefined;
 import static jsweet.util.Lang.*;
 
@@ -33,7 +36,7 @@ public class Thread {
             parent = null;
             importables = new Array<>();
             // TODO push all script which need
-            HTMLScriptElement element = (HTMLScriptElement)document.currentScript;
+            HTMLScriptElement element = (HTMLScriptElement)document.$get("currentScript");
             importables.push(element.src);
         }
         if (IS_WORKER_THREAD) {
