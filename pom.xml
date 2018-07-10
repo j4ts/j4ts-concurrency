@@ -72,7 +72,7 @@
                     <declaration>true</declaration>
                     <outDir>src/main/resources/META-INF/resources/webjars/${project.artifactId}/${project.version}</outDir>
                     <dtsOut>src/main/resources/src/typings/${project.artifactId}/${project.version}</dtsOut>
-                    <targetVersion>ES3</targetVersion>
+                    <targetVersion>ES6</targetVersion>
                 </configuration>
                 <executions>
                     <execution>
@@ -114,11 +114,6 @@
             <groupId>org.jsweet</groupId>
             <artifactId>jsweet-core</artifactId>
             <version>6-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jsweet</groupId>
-            <artifactId>j4ts</artifactId>
-            <version>0.5.0</version>
         </dependency>
     </dependencies>
 

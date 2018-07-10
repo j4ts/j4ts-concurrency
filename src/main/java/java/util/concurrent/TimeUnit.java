@@ -16,7 +16,7 @@ public enum TimeUnit {
     }
 
     public long convert(long duration, TimeUnit toUnit) {
-        return duration / toUnit.toNano * toNano;
+        return (long) ((double) duration / (double) toUnit.toNano * (double) toNano);
     }
 
     public long toNanos(long duration) {
