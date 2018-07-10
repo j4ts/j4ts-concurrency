@@ -3,11 +3,10 @@ package java.util.concurrent;
 import def.js.Promise;
 
 public class FutureTask<V> implements RunnableFuture<V> {
-    private final CompletableFuture<V> completableFuture = new CompletableFuture<>();
-
     private final Callable<V> callable;
     private final Runnable runnable;
     private final V result;
+    private CompletableFuture<V> completableFuture = new CompletableFuture<>();
 
     public FutureTask(Callable<V> callable) {
         this.callable = callable;
@@ -23,23 +22,29 @@ public class FutureTask<V> implements RunnableFuture<V> {
 
     @Override
     public void run() {
+        if (isDone())
+            return;
         try {
             if (callable != null) {
-                completableFuture.complete(callable.call());
+                set(callable.call());
             } else {
                 if (runnable != null) {
                     runnable.run();
                 }
-                completableFuture.complete(result);
+                set(result);
             }
         } catch (Exception e) {
-            completableFuture.completeExceptionally(e);
+            setException(e);
         }
     }
 
     @Override
     public boolean cancel(boolean b) {
-        return completableFuture.cancel(b);
+        if (isDone())
+            return false;
+
+        setException(new CancellationException());
+        return true;
     }
 
     @Override
@@ -52,10 +57,35 @@ public class FutureTask<V> implements RunnableFuture<V> {
         return completableFuture.isDone();
     }
 
-    @Override
+    protected void done() {
+    }
+
+    protected void set(V v) {
+        if (isDone())
+            return;
+
+        completableFuture.complete(v);
+        done();
+    }
+
+    protected void setException(Throwable t) {
+        if (isDone())
+            return;
+
+        completableFuture.completeExceptionally(t);
+        done();
+    }
+
     public Promise<V> getPromise() {
         return completableFuture.getPromise();
     }
 
+    protected boolean runAndReset() {
+        run();
+        if (completableFuture.isCompletedExceptionally())
+            return false;
 
+        completableFuture = new CompletableFuture<>();
+        return true;
+    }
 }

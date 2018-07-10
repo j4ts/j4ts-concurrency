@@ -10,17 +10,9 @@ public class ThreadGroup {
     private final ThreadGroup parent;
     private final String name;
     private final int id;
-
-    private ThreadGroup[] childGroups = new ThreadGroup[0];
     public Thread[] childs = new Thread[0];
+    private ThreadGroup[] childGroups = new ThreadGroup[0];
     private boolean destroyed = false;
-
-    public static ThreadGroup getMain() {
-        if (MAIN == null) {
-            MAIN = new ThreadGroup(null, "main");
-        }
-        return MAIN;
-    }
 
     public ThreadGroup(String name) {
         this(getMain(), name);
@@ -45,6 +37,18 @@ public class ThreadGroup {
         if (parent != null) {
             array(parent.childGroups).push(this);
         }
+    }
+
+    public static ThreadGroup getMain() {
+        if (MAIN == null) {
+            MAIN = new ThreadGroup(null, "main");
+        }
+        return MAIN;
+    }
+
+    static void updateWholeTree(def.js.Object treeObject) {
+        ThreadGroup naked = any(treeObject);
+        getMain().updateTree(naked);
     }
 
     public int activeCount() {
@@ -181,12 +185,6 @@ public class ThreadGroup {
 
     public boolean parentOf(ThreadGroup g) {
         return this == g || g.parent != null && this.parentOf(g.parent);
-    }
-
-
-    static void updateWholeTree(def.js.Object treeObject) {
-        ThreadGroup naked = any(treeObject);
-        getMain().updateTree(naked);
     }
 
     private void updateTree(ThreadGroup nakedObject) {

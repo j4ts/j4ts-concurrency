@@ -83,4 +83,6 @@ public interface CompletionStage<T> {
 //     <U> CompletionStage<U> handleAsync(BiFunction<T, Throwable, U> finallyMake, Executor executor);
 
     CompletableFuture<T> toCompletableFuture();
+
+    Promise<T> getPromise();
 }

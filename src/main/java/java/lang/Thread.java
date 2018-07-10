@@ -8,10 +8,7 @@ import def.js.JSON;
 
 import java.util.function.Function;
 
-import static def.dom.Globals.document;
-import static def.dom.Globals.performance;
-import static def.dom.Globals.window;
-import static def.dom.Globals.self;
+import static def.dom.Globals.*;
 import static def.js.Globals.undefined;
 import static jsweet.util.Lang.*;
 
@@ -36,7 +33,7 @@ public class Thread {
             parent = null;
             importables = new Array<>();
             // TODO push all script which need
-            HTMLScriptElement element = (HTMLScriptElement)document.$get("currentScript");
+            HTMLScriptElement element = (HTMLScriptElement) document.$get("currentScript");
             importables.push(element.src);
         }
         if (IS_WORKER_THREAD) {
@@ -44,11 +41,11 @@ public class Thread {
         }
     }
 
-    private final ThreadGroup threadGroup;
     final int id;
+    private final ThreadGroup threadGroup;
     private final Runnable target;
-    private Worker worker;
     String name;
+    private Worker worker;
     private int priority = 0;
     private boolean _interrupted = false;
     private boolean alive = false;
@@ -144,6 +141,66 @@ public class Thread {
         System.err.println(new Error().stack);
     }
 
+    private static def.js.Object createCommand(String command, Object data) {
+        def.js.Object commandObj = new def.js.Object();
+        commandObj.$set("command", command);
+        commandObj.$set("data", data);
+        return commandObj;
+    }
+
+    public static void onWorkerStart() {
+        self.onmessage = Thread::onMessage;
+        self.$set("onmessageerror", (Function<MessageEvent, def.js.Object>) (MessageEvent e) -> Thread.onMessageError(e));
+    }
+
+    public static def.js.Object onMessage(MessageEvent event) {
+        def.js.Object eventData = object(event.data);
+        def.js.Object commandData = eventData.$get("data");
+        switch (eventData.$get("command").toString()) {
+            case "threads": {
+                ThreadGroup.updateWholeTree(commandData.$get("tree"));
+                ThreadGroup main = ThreadGroup.getMain();
+                main.list();
+                Thread[] arr = new Thread[main.activeCount()];
+                main.enumerate(arr);
+
+                for (Thread thread : arr) {
+                    if (thread.id == (int) commandData.$get("current")) {
+                        current = thread;
+                    }
+                    if (thread.id == (int) commandData.$get("parent")) {
+                        parent = thread;
+                    }
+                }
+
+                ThreadGroup.ID_COUNTER = commandData.$get("maxgroup");
+                Thread.ID_COUNTER = commandData.$get("maxthread");
+
+                System.out.println("Current: " + currentThread());
+                System.out.println("Parent: " + parent);
+                break;
+            }
+            case "start": {
+                Thread.currentThread().run();
+                break;
+            }
+            default:
+                System.err.println("Got an unrecognized command: " + eventData.$get("command") + " with data: " + commandData);
+                break;
+        }
+        return self;
+    }
+
+    public static def.js.Object onMessageError(MessageEvent event) {
+        System.err.println("Got a message error :( " + event.data);
+        return self;
+    }
+
+    public static Object onError(Event event) {
+        System.err.println("Got a error :( ");
+        return self;
+    }
+
     public ThreadGroup getThreadGroup() {
         return threadGroup;
     }
@@ -236,66 +293,6 @@ public class Thread {
         }}));
 
         worker.postMessage(createCommand("start", undefined));
-    }
-
-    private static def.js.Object createCommand(String command, Object data) {
-        def.js.Object commandObj = new def.js.Object();
-        commandObj.$set("command", command);
-        commandObj.$set("data", data);
-        return commandObj;
-    }
-
-    public static void onWorkerStart() {
-        self.onmessage = Thread::onMessage;
-        self.$set("onmessageerror", (Function<MessageEvent, def.js.Object>)(MessageEvent e) -> Thread.onMessageError(e));
-    }
-
-    public static def.js.Object onMessage(MessageEvent event) {
-        def.js.Object eventData = object(event.data);
-        def.js.Object commandData = eventData.$get("data");
-        switch (eventData.$get("command").toString()) {
-            case "threads": {
-                ThreadGroup.updateWholeTree(commandData.$get("tree"));
-                ThreadGroup main = ThreadGroup.getMain();
-                main.list();
-                Thread[] arr = new Thread[main.activeCount()];
-                main.enumerate(arr);
-
-                for (Thread thread : arr) {
-                    if (thread.id == (int) commandData.$get("current")) {
-                        current = thread;
-                    }
-                    if (thread.id == (int) commandData.$get("parent")) {
-                        parent = thread;
-                    }
-                }
-
-                ThreadGroup.ID_COUNTER = commandData.$get("maxgroup");
-                Thread.ID_COUNTER = commandData.$get("maxthread");
-
-                System.out.println("Current: " + currentThread());
-                System.out.println("Parent: " + parent);
-                break;
-            }
-            case "start": {
-                Thread.currentThread().run();
-                break;
-            }
-            default:
-                System.err.println("Got an unrecognized command: " + eventData.$get("command") + " with data: " + commandData);
-                break;
-        }
-        return self;
-    }
-
-    public static def.js.Object onMessageError(MessageEvent event) {
-        System.err.println("Got a message error :( " + event.data);
-        return self;
-    }
-
-    public static Object onError(Event event) {
-        System.err.println("Got a error :( ");
-        return self;
     }
 
     void updateThread(Thread nakedThread) {
