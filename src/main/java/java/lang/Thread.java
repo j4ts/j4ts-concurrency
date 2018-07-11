@@ -18,7 +18,7 @@ public class Thread {
     public static final int MAX_PRIORITY = 0;
     // thread local variable (each one is)
     public static final boolean IS_MAIN_THREAD = typeof(window).equals("object");
-    public static final boolean IS_WORKER_THREAD = !IS_MAIN_THREAD && typeof($insert("importScripts")).equals("function");
+    public static final boolean IS_WORKER_THREAD = !IS_MAIN_THREAD && typeof($insert("self.importScripts")).equals("function");
 
     public static Thread current;
     public static Thread parent;
@@ -27,13 +27,13 @@ public class Thread {
 
     static {
         if (IS_MAIN_THREAD) {
-            current = new Thread(ThreadGroup.getMain(), null, "main");
+            currentThread().alive = true;
             current.alive = true;
 
             parent = null;
             importables = new Array<>();
             // TODO push all script which need
-            HTMLScriptElement element = (HTMLScriptElement) document.$get("currentScript");
+            HTMLScriptElement element = document.$get("currentScript");
             importables.push(element.src);
         }
         if (IS_WORKER_THREAD) {
@@ -43,7 +43,7 @@ public class Thread {
 
     final int id;
     private final ThreadGroup threadGroup;
-    private final Runnable target;
+    private Runnable target;
     String name;
     private Worker worker;
     private int priority = 0;
@@ -130,6 +130,11 @@ public class Thread {
     }
 
     public static Thread currentThread() {
+        if (current == null && IS_MAIN_THREAD) {
+            current = new Thread(ThreadGroup.getMain(), null, "main");
+            self.name = current.getName();
+        }
+
         return current;
     }
 
@@ -264,7 +269,7 @@ public class Thread {
 
         alive = true;
 
-        worker = new Worker(URL.createObjectURL(new Blob(new Object[]{"self.onmessage = e => { importScripts.apply(self, e.data); java.lang.Thread.importables = e.data; }"}, new BlobPropertyBag() {{
+        worker = new Worker(URL.createObjectURL(new Blob(new Object[]{"self.name = " + getName() + "; self.onmessage = e => { importScripts.apply(self, e.data); java.lang.Thread.importables = e.data; }"}, new BlobPropertyBag() {{
             $set("type", "text/javascript");
         }})));
         worker.onmessage = Thread::onMessage;

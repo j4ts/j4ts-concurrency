@@ -312,11 +312,13 @@ public class CompletableFuture<T> implements CompletionStage<T>, Future<T> {
 
     @Override
     public <U> CompletionStage<U> thenCompose(Function<T, CompletionStage<U>> function) {
+        this.dependent += 1;
         return new CompletableFuture<U>(getPromise().thenAsync((T t) -> function.apply(t).getPromise()));
     }
 
     @Override
     public <U> CompletionStage<U> thenComposeAsync(Function<T, CompletionStage<U>> function) {
+        this.dependent += 1;
         return new CompletableFuture<U>(getPromise().thenAsync((T t) -> function.apply(t).getPromise()));
     }
 
